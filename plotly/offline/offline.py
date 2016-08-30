@@ -311,7 +311,7 @@ def iplot(figure_or_data, show_link=True, link_text='Export to plot.ly',
         display(HTML(script))
 
 
-def plot(figure_or_data,
+def plot(figure_or_data, fileObj,
          show_link=True, link_text='Export to plot.ly',
          validate=True, output_type='file',
          include_plotlyjs=True,
@@ -380,11 +380,6 @@ def plot(figure_or_data,
         raise ValueError(
             "`output_type` argument must be 'div' or 'file'. "
             "You supplied `" + output_type + "``")
-    if not filename.endswith('.html') and output_type == 'file':
-        warnings.warn(
-            "Your filename `" + filename + "` didn't end with .html. "
-            "Adding .html to the end of your file.")
-        filename += '.html'
 
     plot_html, plotdivid, width, height = _plot_html(
         figure_or_data, show_link, link_text, validate,
@@ -402,50 +397,45 @@ def plot(figure_or_data,
         ).format(id=plotdivid)
 
     if output_type == 'file':
-        with open(filename, 'w') as f:
-            if include_plotlyjs:
-                plotly_js_script = ''.join([
-                    '<script type="text/javascript">',
-                    get_plotlyjs(),
-                    '</script>',
-                ])
-            else:
-                plotly_js_script = ''
+        if include_plotlyjs:
+            plotly_js_script = ''.join([
+                '<script type="text/javascript">',
+                get_plotlyjs(),
+                '</script>',
+            ])
+        else:
+            plotly_js_script = ''
 
-            if image:
-                if image not in __IMAGE_FORMATS:
-                    raise ValueError('The image parameter must be one of the '
-                                     'following: {}'.format(__IMAGE_FORMATS)
-                                     )
-                # if the check passes then download script is injected.
-                # write the download script:
-                script = get_image_download_script('plot')
-                script = script.format(format=image,
-                                       width=image_width,
-                                       height=image_height,
-                                       filename=image_filename,
-                                       plot_id=plotdivid)
-            else:
-                script = ''
+        if image:
+            if image not in __IMAGE_FORMATS:
+                raise ValueError('The image parameter must be one of the '
+                                 'following: {}'.format(__IMAGE_FORMATS)
+                                 )
+            # if the check passes then download script is injected.
+            # write the download script:
+            script = get_image_download_script('plot')
+            script = script.format(format=image,
+                                   width=image_width,
+                                   height=image_height,
+                                   filename=image_filename,
+                                   plot_id=plotdivid)
+        else:
+            script = ''
 
-            f.write(''.join([
-                '<html>',
-                '<head><meta charset="utf-8" /></head>',
-                '<body>',
-                plotly_js_script,
-                plot_html,
-                resize_script,
-                script,
-                '</body>',
-                '</html>']))
+        fileObj.write(''.join([
+            '<html>',
+            '<head><meta charset="utf-8" /></head>',
+            '<body>',
+            plotly_js_script,
+            plot_html,
+            resize_script,
+            script,
+            '</body>',
+            '</html>']))
 
-        url = 'file://' + os.path.abspath(filename)
-        if auto_open:
-            webbrowser.open(url)
+    return ''
 
-        return url
-
-    elif output_type == 'div':
+    if output_type == 'div':
         if include_plotlyjs:
             return ''.join([
                 '<div>',
